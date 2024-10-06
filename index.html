@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Facial Recognition with face-api.js</title>
+    <title>Face and Voice Detection</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/annyang/2.6.1/annyang.min.js"></script>
 </head>
 <body>
-    <h1>Facial Recognition</h1>
-    <video id="video" width="720" height="560" autoplay muted></video>
+    <video id="video" width="720" height="560" autoplay></video>
     <canvas id="overlay" width="720" height="560"></canvas>
-
-    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
+    
     <script>
         async function setupWebcam() {
             const video = document.getElementById('video');
@@ -23,26 +23,21 @@
         }
 
         async function loadModels() {
-            // Load the models needed for facial recognition
             await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
             await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
             await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
         }
 
-        async function startRecognition() {
+        async function startDetection() {
             const video = await setupWebcam();
             await loadModels();
-
             const canvas = document.getElementById('overlay');
             const displaySize = { width: video.width, height: video.height };
             faceapi.matchDimensions(canvas, displaySize);
 
             video.addEventListener('play', () => {
-                const interval = setInterval(async () => {
-                    const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
-                        .withFaceLandmarks()
-                        .withFaceDescriptors();
-
+                setInterval(async () => {
+                    const detections = await faceapi.detectAllFaces(video).withFaceLandmarks();
                     const resizedDetections = faceapi.resizeResults(detections, displaySize);
                     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
                     faceapi.draw.drawDetections(canvas, resizedDetections);
@@ -51,7 +46,18 @@
             });
         }
 
-        startRecognition();
+        function startVoiceRecognition() {
+            if (annyang) {
+                const commands = {
+                    'hello': () => { alert('Hello!'); }
+                };
+                annyang.addCommands(commands);
+                annyang.start();
+            }
+        }
+
+        startDetection();
+        startVoiceRecognition();
     </script>
 </body>
 </html>
